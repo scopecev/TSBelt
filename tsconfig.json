@@ -1,5 +1,7 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
+        "paths": { "*": ["types/*"] },
       "target": "es2015",
       "lib": ["es2015"],
       "types": ["reflect-metadata"],

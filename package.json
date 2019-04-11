@@ -14,8 +14,10 @@
 		"travis:coveralls": "nyc report --reporter=text-lcov | coveralls",
 		"tsc": "tsc --project tsconfig.json",
 		"tsc:w": "tsc --project tsconfig.json -w",
+		"nlp:download": "npm explore corenlp -- npm run corenlp:download",
+		"nlp:run": "npm explore corenlp -- npm run corenlp:server",
 		"start": "ts-node src/index.ts",
-		"start:dev": "nodemon --watch 'src/**/*.ts' --ignore 'node_modules/**/*' --exec ts-node src/index.ts"
+		"start:dev": "nodemon --watch 'src/**/*.ts' --ignore 'node_modules/**/*' --exec npm start"
 	},
 	"author": "Samer Aldefai",
 	"license": "MIT",
@@ -31,6 +33,7 @@
 		"compromise": "^11.13.2",
 		"concurrently": "^3.5.1",
 		"cookie-parser": "^1.4.3",
+		"corenlp": "^1.5.1",
 		"express": "^4.16.4",
 		"method-override": "^2.3.10",
 		"node-uuid": "^1.4.8",
