@@ -10,7 +10,7 @@ import {
     Required,
     Status
 } from "@tsed/common";
-import {NotFound} from "ts-httpexceptions";
+import { NotFound } from "ts-httpexceptions";
 import {CMDService} from "../../services/CMD/cmd";
 import CoreNLP, { Properties, Pipeline, ConnectorServer } from 'corenlp';
 
