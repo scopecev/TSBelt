@@ -12,6 +12,7 @@ import {
 } from "@tsed/common";
 import {NotFound} from "ts-httpexceptions";
 import {CMDService} from "../../services/CMD/cmd";
+import "../../extensions";
 
 /**
  * Add @Controller annotation to declare your class as Router controller.
@@ -19,7 +20,7 @@ import {CMDService} from "../../services/CMD/cmd";
  * The others params is the controller dependencies.
  */
 @Controller("/interfaces")
-export class InterfacesCtrl {
+export default class InterfacesCtrl {
 
     constructor(private cmdService: CMDService) {
 
@@ -30,7 +31,7 @@ export class InterfacesCtrl {
 
         let output = this.cmdService.man(name)
         .then( (out) => new ManPage(name,out))
-        .then((man) => "<pre>" + JSON.stringify(man) + "\n\n" + man.manString + "</pre>");
+        .then( (man) => "<pre>" + JSON.stringify(man) + "\n\n" + man.manString + "</pre>");
 
         return output;
     }
@@ -41,15 +42,21 @@ export class InterfacesCtrl {
     }
 }
 
+class Text {
+    protected indent: number;
+    constructor( public nr: number ){}
+    getIndent() { return this.indent; }
+}
 
-class Line {
+class Line extends Text {
     isHeader = false;
     isEmpty = false;
-    indent = 0;
     words: string[] = [];
 
-    constructor( public nr: number, public string: string )
+    constructor( nr: number, public string: string )
     {
+        super(nr);
+
         if( this.string.length == 0 ) {
             this.isEmpty = true;
             return;
@@ -74,64 +81,59 @@ class Line {
     }
 }
 
-class Section {
-    sections: Section[] = [];
-    lines: Line[] = [];
-    g:Line[][];
-    constructor( public title: string ) {
-
+class Section extends Text {
+    sections: Section[];
+    text: Text[];
+    parent:Section;
+    constructor( line: Line ) {
+        super(line.nr);
     }
 
-    fin() {
-        // this.g = this.lines.groupBy("indent");
-        /*
-        let lastIndent = this.lines[0].indent;
-        this.lines.forEach((line) => {
-            
-            if( line.indent > lastIndent )
-            {
-                this.sections.last().fin();
-                this.sections.push( new Section(line.string) );
-            } else if( !line.isEmpty ) {
-                this.sections.last().lines.push(line);
+    addLine( line: Line ) {
+        let lineIndent = line.getIndent();
+        
+        if( lineIndent === this.indent ) {
+            this.text.push(line);
+        } else if ( lineIndent < this.indent ) {
+            this.parent.addLine(line);
+        } else if ( lineIndent > this.indent ) {
+            if( this.sections.last() ) {
+                this.sections.last().addLine(line);
+            } else {
+                this.text.push(new Section(line));
             }
-
-            lastIndent = line.indent;
-        });
-        */
+        }
     }
 }
 
 class ManPage {
     sections: Section[];
     constructor( public name: string, public manString: string ) {
-        this.sections = [new Section("HEAD")];
         this.parseText();
     }
 
     parseText() {
         let lines = this.manString.split(/\r?\n/).map((line, nr) => new Line(nr,line));
+        this.sections = [new Section(lines[0])];
+        lines.forEach((line) => {
+            if( line.isEmpty ) {
+                // return
+            }
 
-            lines.forEach((line) => {
-                if( line.isEmpty ) {
-                    // return
-                }
-
-                if( line.isHeader )
-                {
-                    // this.sections = this.sections || [new Section(line.string)];
-                    this.sections[this.sections.length-1].fin();
-                    this.sections.push( new Section(line.string) );
-                } else if( !line.isEmpty ) {
-                    this.sections[this.sections.length-1].lines.push(line);
-                }
-                
-            });
-            /*
-            out.replace(/<TITLE>/g, "<TITLE></TITLE>")
-            //.replace(/([A-Z]*)/g, (sub)=>"<TITLE>"+sub+"</TITLE>")
-            .replace(/\</g, "&lt;")
-            .replace(/\>/g, "&gt;"));
-            */
+            if( line.isHeader )
+            {
+                // this.sections = this.sections || [new Section(line.string)];
+                this.sections.push( new Section(line) );
+            } else if( !line.isEmpty ) {
+                this.sections.last().addLine(line);
+            }
+            
+        });
+        /*
+        out.replace(/<TITLE>/g, "<TITLE></TITLE>")
+        //.replace(/([A-Z]*)/g, (sub)=>"<TITLE>"+sub+"</TITLE>")
+        .replace(/\</g, "&lt;")
+        .replace(/\>/g, "&gt;"));
+        */
     }
 }
