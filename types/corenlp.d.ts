@@ -1,3 +1,4 @@
+// jsdoc node_modules/corenlp/dist/ -t node_modules/tsd-jsdoc/dist -r
 /**
  * @class
  * @classdesc Class representing a Connector CLI (command line interface client)

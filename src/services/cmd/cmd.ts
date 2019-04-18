@@ -1,4 +1,5 @@
 import {Service} from "@tsed/common";
+import {ManPage} from "./ManPage"
 import * as child from 'child_process';
 
 @Service()
@@ -14,8 +15,9 @@ export class CMDService {
      * Return the value stored.
      * @param key
      */
-    public man(name: string) : Promise<string> {
-        return this.run("man " + name + " | col -bx");
+    public man(name: string) : Promise<ManPage> {
+        return this.run("man " + name + " | col -bx")
+        .then((out) => new ManPage(name,out));
     }
 
     /**
