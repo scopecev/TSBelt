@@ -11,7 +11,7 @@ import {
     Status
 } from "@tsed/common";
 import {NotFound} from "ts-httpexceptions";
-import {CMDService} from "../../services/CMD/cmd";
+import {CMDService} from "../../services/cmd/cmd";
 import "../../extensions";
 
 /**
@@ -32,8 +32,9 @@ export default class InterfacesCtrl {
         let output = this.cmdService.man(name)
         .then( (man) => 
         // JSON.stringify(man,(k,v) => k === "parent" ? undefined : v ) + "\n\n" +
-        "<table style='width:100%'><tr><td><pre>" + man.toString() + "</pre></td> <td><pre>" +
-        man.manString + "</pre></td></tr> </tbody>");
+        "<table style='width:100%'><tr><td><pre>" +
+        escapeHtml(man.toString()) +     "</pre></td>    <td><pre>" +
+        escapeHtml(man.manString)  +     "</pre></td></tr>  </tbody>");
 
         return output;
     }
@@ -43,3 +44,12 @@ export default class InterfacesCtrl {
         return this.cmdService.list();
     }
 }
+
+function escapeHtml(unsafe: string) {
+    return unsafe
+         .replace(/&/g, "&amp;")
+         .replace(/</g, "&lt;")
+         .replace(/>/g, "&gt;")
+         .replace(/"/g, "&quot;")
+         .replace(/'/g, "&#039;");
+ }

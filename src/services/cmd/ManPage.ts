@@ -37,13 +37,19 @@ export class Line extends Text {
         });
     }
 
-    search( subject:string ) : Line {
-        return this.string.search(subject) > 0? this : null;
+    search( subject:string ) : Section {
+        let foundAt = this.string.search(Line.escapeRegExp(subject));
+        return foundAt != -1? this.parent : null;
     }
 
     toString() : string {
-        return this.nr + ":" + "\t".repeat(this.parent.getNormalizedIndent()) + this.words.join(" ");
+        return this.nr + ":" + "\t".repeat(this.parent.getNormalizedIndent()) + this.string;
     }
+
+    static escapeRegExp (str : string) {
+        let metaChar = /[-[\]{}()*+?.\\^$|,]/g;
+        return str.replace(metaChar, "\\$&");
+    };
 
     static getLines( nr: number, string: string ) : Line[] {
         if( string.length == 0 ) {
@@ -102,15 +108,22 @@ export class Section extends Text {
         }
     }
 
-    search( subject:string ) : Section | Line {
-        let found = null;
-        this.text.forEach((iText) => {
-            found = iText.search(subject);
-            if ( found ) {
-                return found;
+    search( subject:string ) : Section {
+        let found = this.text
+        .map((t)=>t.search(subject))
+        .filter((t) => t!==null);
+        return found[0] || null;
+    }
+
+    getString() : string {
+        let string = this.text.map((t) => {
+            if ( t instanceof Line ) {
+                return t.string;
+            } else if ( t instanceof Section ) {
+                return t.getString();
             }
-        });
-        return found;
+        }).join(" ");;
+        return string;
     }
 
     toString() : string {
@@ -123,9 +136,36 @@ export class Section extends Text {
 
 export class ManPage {
     text: Section[] = [];
+    sysnopsys: Section;
     constructor( public name: string, public manString: string ) {
         this.parseText();
-        console.log(this.search("SYNOPSIS"));
+        this.sysnopsys = this.search("SYNOPSIS");
+        this.readSynopsis();
+    }
+
+    readSynopsis() {
+        // https://askubuntu.com/questions/650236/how-to-read-command-example-syntax-in-synopsis-sections-of-man-pages
+        // http://www.tfug.org/helpdesk/general/man.html
+        
+        this.sysnopsys = this.search("SYNOPSIS");
+        let optionsSection = this.search("OPTIONS");
+        // strip unnesesary strings & seperate into array
+
+        let parsedOptions = this.sysnopsys.getString()
+        .replace("SYNOPSIS","")
+        .replace(this.name,"")
+        .replace(/(  )+/g," ")
+        .match(/(\[([^\]]+|(\[[.]+\]))\])|(<[^>]+>)/g);
+        // .map((imo)=>imo.substr(1,imo.length-2));
+
+        let description = parsedOptions
+        .map((imo) => imo.replace(/^\[/,"").replace(/\]$/,"") )
+        .map((imo) => {
+            // TODO: search for actual description in the section
+            return optionsSection.search(imo);
+        });
+        console.log(parsedOptions);
+        console.log(description);
     }
 
     parseText() {
@@ -150,12 +190,11 @@ export class ManPage {
         });
     }
 
-    search( subject:string ) : Section | Line {
-        let found = null;
-        this.text.forEach((iText)=>{
-            found = iText.search(subject);
-        })
-        return found;
+    search( subject:string ) : Section {
+        let found = this.text
+        .map((t)=>t.search(subject))
+        .filter((t) => t!==null);
+        return found[0] || null;
     }
 
 

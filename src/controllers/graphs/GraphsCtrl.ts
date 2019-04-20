@@ -11,7 +11,7 @@ import {
     Status
 } from "@tsed/common";
 import { NotFound } from "ts-httpexceptions";
-import {CMDService} from "../../services/CMD/cmd";
+import {CMDService} from "../../services/cmd/cmd";
 import CoreNLP, { Properties, Pipeline, ConnectorServer } from 'corenlp';
 
 /**
