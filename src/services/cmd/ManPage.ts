@@ -1,4 +1,6 @@
 
+import "../../extensions";
+
 export class Text {
     protected indent: number;
     parent:Section;
@@ -43,7 +45,7 @@ export class Line extends Text {
     }
 
     toString() : string {
-        return this.nr + ":" + "\t".repeat(this.parent.getNormalizedIndent()) + this.string;
+        return this.nr + ":" + "\t".repeat(this.parent.getNormalizedIndent()) + this.words.join(" ");
     }
 
     static escapeRegExp (str : string) {
@@ -147,23 +149,31 @@ export class ManPage {
         // https://askubuntu.com/questions/650236/how-to-read-command-example-syntax-in-synopsis-sections-of-man-pages
         // http://www.tfug.org/helpdesk/general/man.html
         
-        this.sysnopsys = this.search("SYNOPSIS");
+        this.sysnopsys = this.search("SYNOPSIS").search(this.name);
         let optionsSection = this.search("OPTIONS");
         // strip unnesesary strings & seperate into array
-
+        optionsSection.text.map( ( optionDescription )=>{
+            return optionDescription
+        })
         let parsedOptions = this.sysnopsys.getString()
         .replace("SYNOPSIS","")
         .replace(this.name,"")
         .replace(/(  )+/g," ")
-        .match(/(\[([^\]]+|(\[[.]+\]))\])|(<[^>]+>)/g);
-        // .map((imo)=>imo.substr(1,imo.length-2));
+        .match(/(\[([^\]]+|(\[[.]+\]))\])|(<[^>]+>)/g)
+        .map((imo) => imo.replace(/^\[/,"").replace(/\]$/,"") );
 
         let description = parsedOptions
-        .map((imo) => imo.replace(/^\[/,"").replace(/\]$/,"") )
+        // .reduce((acc, val) => acc.concat(val), []);
         .map((imo) => {
             // TODO: search for actual description in the section
-            return optionsSection.search(imo);
+            let all = imo.split("|").map((simo) => optionsSection.search(simo));
+            if ( all.length == 1 ) {
+                return all[0];
+            } else if (all.length == 0) {
+                return null;
+            } else { return all; }
         });
+        // .reduce((acc, val) => acc.concat(val), []);
         console.log(parsedOptions);
         console.log(description);
     }
