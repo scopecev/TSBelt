@@ -14,7 +14,7 @@ import { NotFound } from "ts-httpexceptions";
 import {CMDService} from "../../services/cmd/cmd";
 import CoreNLP, { Properties, Pipeline, ConnectorServer } from 'corenlp';
 import * as nlp from "compromise";
-import wtf = require('wtf_wikipedia');
+import * as wtf from "wtf_wikipedia";
 
 /**
  * Add @Controller annotation to declare your class as Router controller.
@@ -45,9 +45,6 @@ export class GraphCtrl {
         .catch(err => {
             console.log('err', err);
         });
-        // let output = this.cmdService.man(text);
-        //.then( (out) => new ManPage(name,out))
-        //.then((man) => "<pre>" + JSON.stringify(man) + "\n\n" + man.manString + "</pre>");
         return output;
     }
 
@@ -69,12 +66,12 @@ export class GraphCtrl {
             if (typeof arrCat === 'undefined' || arrCat.length < 1) { // there are categories
                 let currWikiLinks = myDoc.sections(1).links()[0];
                 if (typeof currWikiLinks === 'undefined') {
-                currWikiLinks = myDoc.sections(0).links()[0];
+                    currWikiLinks = myDoc.sections(0).links()[0];
                 }
                 if (typeof currWikiLinks !== 'undefined') {
-                // then use the first common category
-                strNewFetchString = myDoc.sections(1).links()[0].page;
-                myDoc = await wtf.fetch(strNewFetchString);
+                    // then use the first common category
+                    strNewFetchString = myDoc.sections(1).links()[0].page;
+                    myDoc = await wtf.fetch(strNewFetchString);
                 }
             }
             
@@ -85,13 +82,13 @@ export class GraphCtrl {
             if (typeof strFirstNouns === 'undefined' || strFirstNouns === '') {
                 strFirstNouns = nlp(strFirstSenteceNormal).match('(is|are|was|were) #Determiner * #Preposition? #Noun').out();
                 if (typeof strFirstNouns === 'undefined' || strFirstNouns === '') {
-                strFirstNouns = nlp(strFirstSenteceNormal).match('(is|are|was|were) #Determiner * #Preposition? #Noun (or|,)').out();
-                if (typeof strFirstNouns === 'undefined' || strFirstNouns === '') {
-                    strFirstNouns = nlp(strFirstSenteceNormal).match('(is|are|was|were) #Determiner * #Noun+ #Noun+').out();
+                    strFirstNouns = nlp(strFirstSenteceNormal).match('(is|are|was|were) #Determiner * #Preposition? #Noun (or|,)').out();
                     if (typeof strFirstNouns === 'undefined' || strFirstNouns === '') {
-                    strFirstNouns = nlp(strFirstSenteceNormal).match('* (is|are|was|were) #Determiner #Noun').out();
+                        strFirstNouns = nlp(strFirstSenteceNormal).match('(is|are|was|were) #Determiner * #Noun+ #Noun+').out();
+                        if (typeof strFirstNouns === 'undefined' || strFirstNouns === '') {
+                            strFirstNouns = nlp(strFirstSenteceNormal).match('* (is|are|was|were) #Determiner #Noun').out();
+                        }
                     }
-                }
                 }
             }
             const arrFirstNouns = nlp(strFirstNouns).nouns().terms().out('array');
