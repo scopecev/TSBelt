@@ -40,7 +40,7 @@ export default class InterfacesCtrl {
     }
 
     @Get("/")
-    async getAllCalendars(): Promise<string> {
+    async getAllCalendars(): Promise<string[]> {
         return this.cmdService.list();
     }
 }

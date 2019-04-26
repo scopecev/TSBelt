@@ -4,7 +4,11 @@ import Path = require("path");
 
 @ServerSettings({
     rootDir: Path.resolve(__dirname),
-    acceptMimes: ["application/json"]
+    acceptMimes: ["application/json"],
+    // "env": 'development',
+    port: 8080,
+    httpsPort: 8000,
+    uploadDir: "${rootDir}/uploads",
 })
 export class Server extends ServerLoader {
 
@@ -42,4 +46,4 @@ export class Server extends ServerLoader {
     }    
 }
 
-new Server().start();
+// new Server().start();

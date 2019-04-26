@@ -39,8 +39,9 @@ export class CMDService {
     /**
      * Return list of commands.
      */
-    public list() : Promise<string> {
-        return this.run("compgen -c");
+    public async list() : Promise<string[]> {
+        const s = await this.run("compgen -c | col -bx");
+        return s.split("\n");
     }
 
     /**
