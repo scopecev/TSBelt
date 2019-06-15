@@ -12,7 +12,8 @@
             "runtimeArgs": ["--nolazy", "-r", "ts-node/register"],
             "sourceMaps": true,
             "cwd": "${workspaceFolder}",
-            "protocol": "inspector"
+            "protocol": "inspector",
+            "console": "integratedTerminal"
         }
     ]
 }

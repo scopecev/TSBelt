@@ -13,11 +13,11 @@ export class CMDService {
 
     /**
      * Return the value stored.
-     * @param key
+     * @param name
      */
-    public man(name: string) : Promise<ManPage> {
-        return this.run("man " + name + " | col -bx")
-        .then((out) => new ManPage(name,out));
+    public async man(name: string) : Promise<ManPage> {
+        const out = await this.run("man " + name + " | col -bx");
+        return new ManPage(name, out);
     }
 
     /**
@@ -53,11 +53,11 @@ export class CMDService {
 
     /**
      * run cmd.
-     * @param key
+     * @param comand
      */
-    private run(order: string) : Promise<string> {
-        return new Promise<string>((resolve,reject)=>{
-            child.exec(order, (error: child.ExecException, stdout: string, stderr: string) => {
+    private async run(comand: string) : Promise<string> {
+        return new Promise<string>((resolve,reject) => {
+            child.exec(comand, (error: child.ExecException, stdout: string, stderr: string) => {
                 if (error) {
                     console.log(`exec error: ${error}`);
                     reject(error);
