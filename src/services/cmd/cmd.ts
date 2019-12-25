@@ -45,6 +45,13 @@ export class CMDService {
     }
 
     /**
+     * Return list of commands.
+     */
+    public async runJavaParserOnPath( pathToJavaFile : string ) : Promise<string> {
+        return this.run("java -jar ASTParser/javaparser/parser.jar \"" + pathToJavaFile + "\"");
+    }
+
+    /**
      * Serialize value and store it.
      * @param key
      * @param value
@@ -57,7 +64,7 @@ export class CMDService {
      */
     private async run(comand: string) : Promise<string> {
         return new Promise<string>((resolve,reject) => {
-            child.exec(comand, (error: child.ExecException, stdout: string, stderr: string) => {
+            child.exec(comand, {maxBuffer: 1024 * 5000},(error: child.ExecException, stdout: string, stderr: string) => {
                 if (error) {
                     console.log(`exec error: ${error}`);
                     reject(error);
@@ -67,7 +74,5 @@ export class CMDService {
                 resolve(stdout);
             });
         });
-        
-
     }
 }

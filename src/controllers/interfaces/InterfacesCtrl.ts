@@ -32,10 +32,10 @@ export default class InterfacesCtrl {
         let output = this.cmdService.man(name)
         .then( (man) => 
         //"<pre>" + escapeHtml(JSON.stringify(man,(k,v) => k === "parent" ? undefined : v )) + "</pre>\n\n" +
-        "<div>" + escapeHtml(JSON.stringify(man,(k,v) => k === "parent" ? undefined : v )) + "</div>" +
-        "<table style='width:100%'><tr><td><pre>" +
-        escapeHtml(man.toString()) +     "</pre></td>    <td style='vertical-align: top;'><pre>" +
-        escapeHtml(man.manString)  +     "</pre></td></tr>  </tbody>");
+        "<div style='white-space: nowrap;'>" + escapeHtml(JSON.stringify(man,(k,v) => k === "parent" ? undefined : v )) + "</div>" +
+        "<div style='width:100%; display: flex;'><div><pre>" +
+        escapeHtml(man.toString()) +     "</pre></div>    <div style='vertical-align: top;'><pre>" +
+        escapeHtml(man.manString)  +     "</pre></div> </div>");
 
         return output;
     }
