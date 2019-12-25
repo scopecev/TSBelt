@@ -133,7 +133,7 @@ export class Section extends Text {
 
     toString() : string {
         return this.text
-        .map((itext) => (itext instanceof Line) ? " " + itext.toString() : itext.toString())
+        .map((itext) => (itext instanceof Line) ? " " + itext.toString() : "\n-\n" + itext.toString())
         .join("\n");
     }
 }
@@ -218,7 +218,7 @@ export class ManPage {
         this.parseText();
         this.sysnopsys = this.search("SYNOPSIS");
         this.readSynopsis();
-        // this.manString = "";
+        this.manString = "";
     }
 
     readSynopsis() {
@@ -285,7 +285,7 @@ export class ManPage {
 
     toString() : string {
         return this.text
-        .map((itext) => (itext instanceof Line) ? itext.toString() : "\n" + itext.toString())
-        .join("");
+        .map((itext) => (itext instanceof Line) ? itext.toString() : "\n-\n" + itext.toString())
+        .join("\n");
     }
 }
