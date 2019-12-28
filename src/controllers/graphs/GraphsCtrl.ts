@@ -13,7 +13,7 @@ import {
 import { NotFound } from "ts-httpexceptions";
 import {CMDService} from "../../services/cmd/cmd";
 import CoreNLP, { Properties, Pipeline, ConnectorServer } from 'corenlp';
-import * as nlp from "compromise";
+import nlp from "compromise"
 import * as wtf from "wtf_wikipedia";
 
 /**
@@ -77,7 +77,8 @@ export class GraphCtrl {
             
             const strExplanationOfFetchedString = myDoc.sentences(0).text();
             const strFirstSenteceNormal = strExplanationOfFetchedString;//nlp(strExplanationOfFetchedString).sentences().data()[0].normal;
-            console.log(JSON.stringify(nlp(strExplanationOfFetchedString).sentences().data()));
+            console.log(JSON.stringify(nlp(strExplanationOfFetchedString).sentences().text()));
+            // nlp(strFirstSenteceNormal)
             let strFirstNouns = nlp(strFirstSenteceNormal).match('(is|are|was|were) #Determiner #Adjective+ #Noun').out();
             if (typeof strFirstNouns === 'undefined' || strFirstNouns === '') {
                 strFirstNouns = nlp(strFirstSenteceNormal).match('(is|are|was|were) #Determiner * #Preposition? #Noun').out();
