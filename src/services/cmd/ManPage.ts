@@ -5,15 +5,19 @@ import { setFlagsFromString } from "v8";
 export class Text {
     indent: number;
     parent:Section;
-    constructor( public nr: number ){}
+    constructor( public nr: number ) {}
     getIndent() { return this.indent; }
-    getNormalizedIndent() { return this.parent ? this.parent.getNormalizedIndent()+1 : 0; }
+    getNormalizedIndent() { return this.parent ? this.parent.getNormalizedIndent() + 1 : 0; }
+}
+
+export class Word {
+    constructor( public position: number, public string: string ) {}
 }
 
 export class Line extends Text {
     isHeader = false;
     isEmpty = false;
-    words: string[] = [];
+    words: Word[] = [];
 
     constructor( nr: number, public string: string )
     {
@@ -35,8 +39,7 @@ export class Line extends Text {
         else { this.indent = 0; }
 
         this.words = this.string.split(/[ ]+/).filter( (w)=> w.length > 0 ).map( (word) => {
-            
-            return word;
+            return new Word(this.string.indexOf(word), word);
         });
     }
 
@@ -46,7 +49,9 @@ export class Line extends Text {
     }
 
     toString() : string {
-        return this.nr + ":" + "\t".repeat(this.getNormalizedIndent()) + this.words.join(" ");
+        // return `${this.nr} : ${this.getIndent()} => ${this.parent.getNormalizedIndent()} + 1 => ${this.getNormalizedIndent()}`;
+        return `${this.nr} : ${"\t".repeat(this.getNormalizedIndent()) + this.words.map(W => W.position).join(" ")}`;
+        // return this.nr + ":" + "\t".repeat(this.getNormalizedIndent()) + this.words.join(" ");
     }
 
     static escapeRegExp (str : string) {
@@ -133,7 +138,7 @@ export class Section extends Text {
 
     toString() : string {
         return this.text
-        .map((itext) => (itext instanceof Line) ? " " + itext.toString() : itext.toString())
+        .map((itext) => itext.toString())
         .join("\n");
     }
 }
@@ -173,7 +178,7 @@ class OptionSection extends Section {
     detectOptions() {
         let optionDescriptionsRaw = new Array<Section>();
 
-        this.text.forEach(( element, index, array ) => {
+        this.text?.forEach(( element, index, array ) => {
             let nextE = index < array.length - 1 ? array[index+1] : null;
             
             if ( element instanceof Line && nextE instanceof Section) {
@@ -225,7 +230,7 @@ export class ManPage {
         // https://askubuntu.com/questions/650236/how-to-read-command-example-syntax-in-synopsis-sections-of-man-pages
         // http://www.tfug.org/helpdesk/general/man.html
         
-        let optionsSection = new OptionSection(this.search("OPTIONS"));
+        // let optionsSection = new OptionSection(this.search("OPTIONS"));
         this.sysnopsys = this.search("SYNOPSIS").search(this.name);
         
         // strip unnesesary strings & seperate into array
@@ -239,7 +244,8 @@ export class ManPage {
         let description = parsedOptions
         .map((imo) => {
             // TODO: search for actual description in the section
-            let all = imo.split("|").map((simo) => optionsSection.searchOption(simo));
+            // let all = imo.split("|").map((simo) => optionsSection.searchOption(simo));
+            let all = [];
             if ( all.length == 1 ) {
                 return all[0];
             } else if (all.length == 0) {
@@ -248,7 +254,7 @@ export class ManPage {
         });
         // .reduce((acc, val) => acc.concat(val), []);
 
-        console.log(optionsSection.optionDescriptions.map(x=>x.options));
+        // console.log(optionsSection.optionDescriptions.map(x=>x.options));
         console.log(parsedOptions);
         console.log(description);
     }
