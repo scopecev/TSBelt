@@ -41,7 +41,7 @@ export default class InterfacesCtrl {
                     position: absolute;
                     color: blue;
                     opacity: .4;
-                    left: 4.4rem;
+                    left: 5.9rem;
                     top: 15.5px;'>
                         <pre>
         ${escapeHtml(man.manString)}

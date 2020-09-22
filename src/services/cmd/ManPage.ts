@@ -28,7 +28,7 @@ export class Line extends Text {
             // return;
         }
 
-        if( !this.isEmpty && this.string == this.string.toUpperCase() && this.string.length > 1 ) {
+        if( !this.isEmpty && this.string.trim().match(/^[A-Z]*$/) ) {
             this.isHeader = true;
         }
 
@@ -50,7 +50,8 @@ export class Line extends Text {
 
     toString() : string {
         // return `${this.nr} : ${this.getIndent()} => ${this.parent.getNormalizedIndent()} + 1 => ${this.getNormalizedIndent()}`;
-        return `${this.nr} : ${"\t".repeat(this.getNormalizedIndent()) + this.words.map(W => W.position).join(" ")}`;
+        // return `${this.nr} ->  ${this.indent} : ${"\t".repeat(this.getNormalizedIndent()) + this.words.map(W => W.position).join(" ")}`;
+        return `${this.nr} : ${"\t".repeat(this.getNormalizedIndent()) + this.words.map(W => W.string).join(" ")}`;
         // return this.nr + ":" + "\t".repeat(this.getNormalizedIndent()) + this.words.join(" ");
     }
 
@@ -82,13 +83,21 @@ export class Line extends Text {
 
 
 export class Section extends Text {
-    text: Array<OptionDescription|Line|Section> = [];
+    text: Array<Line|Section> = [];
     // @JsonIgnore
     
     constructor( line: Line ) {
         super(line.nr);
         this.indent = line.getIndent();
         this.addLine(line);
+    }
+
+    getLastSection(indent: number) {
+        let lastSection = this.text.last() instanceof Section ? (this.text.last() as Section) : null;
+        if ( lastSection && indent < lastSection.getIndent()  ) {
+            return lastSection.getLastSection(indent);
+        }
+        return lastSection;
     }
 
     addLine( line: Line ) {
@@ -100,21 +109,27 @@ export class Section extends Text {
         } else if ( lineIndent < this.indent && this.parent ) {
             this.parent.addLine(line);
         } else if ( lineIndent > this.indent ) {
-            let lastSection = this.text.last() instanceof Section ? (this.text.last() as Section) : null;
+            let lastText = this.text.last();
+            let lastSection = this.getLastSection(lineIndent);
 
-            if ( lastSection && lineIndent < lastSection.getIndent()  ) {
-                let newSection = new Section(line);
-                newSection.parent = this.parent;
-                this.text.push(newSection);
-            } else {
-                if( lastSection === null ) {
+            
+                if ( lastSection != null ) {
+                    lastSection.addLine(line);
+                }
+                /*
+                else if( lastText != null ) {
+                    lastSection = new Section(lastText as Line);
+                    lastSection.parent = this;
+                    this.text.push(lastSection);
+                    lastSection.addLine(line);
+                }
+                */
+                else  {
                     let newSection = new Section(line);
                     newSection.parent = this;
                     this.text.push(newSection);
-                } else {
-                    lastSection.addLine(line);
                 }
-            }
+            
         }
     }
 
@@ -167,12 +182,13 @@ class OptionDescription extends Section {
     }
 }
 
-class OptionSection extends Section {
+class OptionSection {
+
+    text: Array<OptionDescription|Line|Section> = [];
     optionDescriptions: Array<OptionDescription>;
     constructor( section: Section ) {
-        super(section.text[0] as Line);
         this.text = (section.text[1] as Section).text;
-        this.detectOptions();
+        // this.detectOptions();
     }
 
     detectOptions() {
@@ -218,6 +234,7 @@ class OptionSection extends Section {
 
 export class ManPage {
     text: Section[] = [];
+    headerIndent: number;
     sysnopsys: Section;
     constructor( public name: string, public manString: string ) {
         this.parseText();
@@ -230,7 +247,7 @@ export class ManPage {
         // https://askubuntu.com/questions/650236/how-to-read-command-example-syntax-in-synopsis-sections-of-man-pages
         // http://www.tfug.org/helpdesk/general/man.html
         
-        // let optionsSection = new OptionSection(this.search("OPTIONS"));
+        let optionsSection = new OptionSection( this.search("OPTIONS") );
         this.sysnopsys = this.search("SYNOPSIS").search(this.name);
         
         // strip unnesesary strings & seperate into array
@@ -240,12 +257,11 @@ export class ManPage {
         .replace(/(  )+/g," ")
         .match(/\[[^\[]+(\[[^\[]+\])?\]|(<[^>]+>)/g)
         .map((imo) => imo.replace(/^\[/,"").replace(/\]$/,"") );
-
+/*
         let description = parsedOptions
         .map((imo) => {
             // TODO: search for actual description in the section
-            // let all = imo.split("|").map((simo) => optionsSection.searchOption(simo));
-            let all = [];
+            let all = imo.split("|").map((simo) => optionsSection.searchOption(simo));
             if ( all.length == 1 ) {
                 return all[0];
             } else if (all.length == 0) {
@@ -254,9 +270,10 @@ export class ManPage {
         });
         // .reduce((acc, val) => acc.concat(val), []);
 
-        // console.log(optionsSection.optionDescriptions.map(x=>x.options));
+        console.log(optionsSection.optionDescriptions.map(x=>x.options));
+        */
         console.log(parsedOptions);
-        console.log(description);
+        // console.log(description);
     }
 
     parseText() {
@@ -270,10 +287,14 @@ export class ManPage {
                 line.indent = lines[i-1].getIndent();
             }
 
-            if( line.isHeader )
+            if( line.isHeader && (this.headerIndent == null || line.getIndent() <= this.headerIndent))
             {
-                // this.sections = this.sections || [new Section(line.string)];
+                if ( this.headerIndent == null ) {
+                    this.headerIndent = line.getIndent();
+                }
                 this.text.push( new Section(line) );
+                // this.sections = this.sections || [new Section(line.string)];
+                
             } else if( this.text.last() ) {
                 this.text.last().addLine(line);
             }
