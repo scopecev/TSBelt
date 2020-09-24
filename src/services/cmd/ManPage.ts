@@ -1,162 +1,9 @@
 
 import "../../extensions";
 import { setFlagsFromString } from "v8";
-
-export class Text {
-    indent: number;
-    parent:Section;
-    constructor( public nr: number ) {}
-    getIndent() { return this.indent; }
-    getNormalizedIndent() { return this.parent ? this.parent.getNormalizedIndent() + 1 : 0; }
-}
-
-export class Word {
-    constructor( public position: number, public string: string ) {}
-}
-
-export class Line extends Text {
-    isHeader = false;
-    isEmpty = false;
-    words: Word[] = [];
-
-    constructor( nr: number, public string: string )
-    {
-        super(nr);
-
-        if( this.string.length == 0 ) {
-            this.isEmpty = true;
-            // return;
-        }
-
-        if( !this.isEmpty && this.string.trim().match(/^[A-Z]*$/) ) {
-            this.isHeader = true;
-        }
-
-        let indent = /^[ ]+/.exec(this.string);
-        if ( indent && indent[0] && indent[0].length > 0 ) {
-            this.indent = indent[0].length;
-        }
-        else { this.indent = 0; }
-
-        this.words = this.string.split(/[ ]+/).filter( (w)=> w.length > 0 ).map( (word) => {
-            return new Word(this.string.indexOf(word), word);
-        });
-    }
-
-    search( subject:string ) : Section {
-        let foundAt = this.string.search(Line.escapeRegExp(subject));
-        return foundAt != -1? this.parent : null;
-    }
-
-    toString() : string {
-        // return `${this.nr} : ${this.getIndent()} => ${this.parent.getNormalizedIndent()} + 1 => ${this.getNormalizedIndent()}`;
-        // return `${this.nr} ->  ${this.indent} : ${"\t".repeat(this.getNormalizedIndent()) + this.words.map(W => W.position).join(" ")}`;
-        return `${this.nr} : ${"\t".repeat(this.getNormalizedIndent()) + this.words.map(W => W.string).join(" ")}`;
-        // return this.nr + ":" + "\t".repeat(this.getNormalizedIndent()) + this.words.join(" ");
-    }
-
-    static escapeRegExp (str : string) {
-        let metaChar = /[-[\]{}()*+?.\\^$|,]/g;
-        return str.replace(metaChar, "\\$&");
-    };
-
-    static getLines( nr: number, string: string ) : Line[] {
-        
-        if( string.length == 0 ) {
-            return [new Line(nr, string)]
-        }
-        return [new Line(nr, string)];
-        let subLines = string.replace(/(    )+/g, (s)=> "\n"+s).split(/\n/);
-        // console.log(string.replace(/(    )+/g, (s)=> " x "));
-        // console.log(string.replace(/(    )+/g, (s)=> "----"));
-        subLines.forEach(( subLine, i ) => {
-            if (i > 1) {
-                let pos = string.lastIndexOf(subLine);
-                subLines[i] = " ".repeat(pos) + subLine;
-            }
-        });
-        return subLines
-        .filter( (subLine) => subLine.length > 0 )
-        .map((newstring) => new Line(nr,newstring));
-    }
-}
-
-
-export class Section extends Text {
-    text: Array<Line|Section> = [];
-    // @JsonIgnore
-    
-    constructor( line: Line ) {
-        super(line.nr);
-        this.indent = line.getIndent();
-        this.addLine(line);
-    }
-
-    getLastSection(indent: number) {
-        let lastSection = this.text.last() instanceof Section ? (this.text.last() as Section) : null;
-        if ( lastSection && indent < lastSection.getIndent()  ) {
-            return lastSection.getLastSection(indent);
-        }
-        return lastSection;
-    }
-
-    addLine( line: Line ) {
-        let lineIndent = line.getIndent();
-        // console.log(line.toString());
-        if( lineIndent === this.indent ) {
-            line.parent = this;
-            this.text.push(line);
-        } else if ( lineIndent < this.indent && this.parent ) {
-            this.parent.addLine(line);
-        } else if ( lineIndent > this.indent ) {
-            let lastText = this.text.last();
-            let lastSection = this.getLastSection(lineIndent);
-
-            
-                if ( lastSection != null ) {
-                    lastSection.addLine(line);
-                }
-                /*
-                else if( lastText != null ) {
-                    lastSection = new Section(lastText as Line);
-                    lastSection.parent = this;
-                    this.text.push(lastSection);
-                    lastSection.addLine(line);
-                }
-                */
-                else  {
-                    let newSection = new Section(line);
-                    newSection.parent = this;
-                    this.text.push(newSection);
-                }
-            
-        }
-    }
-
-    search( subject:string ) : Section {
-        let found = this.text
-        .map((t)=>t.search(subject))
-        .filter((t) => t!==null);
-        return found[0] || null;
-    }
-
-    getString() : string {
-        let string = this.text.map((t) => {
-            if ( t instanceof Line ) {
-                return t.string;
-            } else if ( t instanceof Section ) {
-                return t.getString();
-            }
-        }).join(" ");;
-        return string;
-    }
-
-    toString() : string {
-        return this.text
-        .map((itext) => itext.toString())
-        .join("\n");
-    }
-}
+import { Word } from "./man/Word"
+import { Section } from "./man/Section"
+import { Line } from "./man/Line"
 
 class OptionDescription extends Section {
     options: Array<string>;
@@ -248,6 +95,7 @@ export class ManPage {
         // http://www.tfug.org/helpdesk/general/man.html
         
         let optionsSection = new OptionSection( this.search("OPTIONS") );
+        optionsSection.detectOptions();
         this.sysnopsys = this.search("SYNOPSIS").search(this.name);
         
         // strip unnesesary strings & seperate into array
@@ -257,7 +105,7 @@ export class ManPage {
         .replace(/(  )+/g," ")
         .match(/\[[^\[]+(\[[^\[]+\])?\]|(<[^>]+>)/g)
         .map((imo) => imo.replace(/^\[/,"").replace(/\]$/,"") );
-/*
+
         let description = parsedOptions
         .map((imo) => {
             // TODO: search for actual description in the section
@@ -271,9 +119,9 @@ export class ManPage {
         // .reduce((acc, val) => acc.concat(val), []);
 
         console.log(optionsSection.optionDescriptions.map(x=>x.options));
-        */
+        
         console.log(parsedOptions);
-        // console.log(description);
+        console.log(description);
     }
 
     parseText() {
